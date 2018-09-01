@@ -2,6 +2,9 @@ package minhalista.com.gabriel.minhalista;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -9,12 +12,14 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.Toast;
+import android.widget.TextView;
+
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -26,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter<String> adapter;
     private ArrayList<String> informacoes;
     private ArrayList<Integer> ids;
+    EditText edit_digitado;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     final AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
                     View mview = getLayoutInflater().inflate(R.layout.layout_dialog, null);
-                    final EditText edit_digitado = mview.findViewById(R.id.edit_digitado);
+                    edit_digitado = mview.findViewById(R.id.edit_digitado);
                     Button btn_adicionar = mview.findViewById(R.id.btn_adicionar);
 
                     btn_adicionar.setOnClickListener(new View.OnClickListener() {
@@ -67,10 +73,10 @@ public class MainActivity extends AppCompatActivity {
 
 
             //Criando o banco de dados
-            bd = openOrCreateDatabase("app", MODE_PRIVATE, null);
+            bd = openOrCreateDatabase("appminhalista", MODE_PRIVATE, null);
 
             //Criando a tabela
-            bd.execSQL("CREATE TABLE IF NOT EXISTS informacoes('id INTEGER PRIMARY KEY AUTOINCREMENT, informacao VARCHAR')");
+            bd.execSQL("CREATE TABLE IF NOT EXISTS informacoes(id INTEGER PRIMARY KEY AUTOINCREMENT, informacao VARCHAR)");
 
 
             lista.setLongClickable(true);
@@ -78,9 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                     removerInformacao(ids.get(position));
-                    recuperarInformacao();
-                    Toast.makeText(getApplicationContext(), "Removido com sucesso", Toast.LENGTH_LONG).show();
-                    return true;
+                    Snackbar.make(layout, "Item removido", Snackbar.LENGTH_SHORT).show();                    return true;
                 }
             });
             lista.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -101,13 +105,14 @@ public class MainActivity extends AppCompatActivity {
     private void salvarInformacao(String digitado){
         try{
             if(digitado.equals("")){
-                Toast.makeText(this, "Digite algo para ser salvo", Toast.LENGTH_LONG).show();
+                Snackbar.make(layout, "Campo vazio. Digite algo para ser adicionado a lista", Snackbar.LENGTH_SHORT).show();;
             }else{
                 //Estamos agora usando o método para inserir na tabela o valor que está na variável digitado
                 //Observe que adicionamos no campo informacao e concatenamos a variavel
-                bd.execSQL("INSERT INTO informacoes VALUES('"+ digitado +"')");
-                Toast.makeText(this, "Adicionado a lista", Toast.LENGTH_LONG).show();
+                bd.execSQL("INSERT INTO informacoes (informacao) VALUES('"+ digitado +"')");
+                Snackbar.make(layout, "Item adicionado a lista", Snackbar.LENGTH_SHORT).show();
                 recuperarInformacao();
+                edit_digitado.setText("");
             }
 
         }catch (Exception e){
@@ -131,9 +136,20 @@ public class MainActivity extends AppCompatActivity {
             informacoes = new ArrayList<String>();
             ids = new ArrayList<Integer>();
             adapter = new ArrayAdapter<String>(getApplicationContext(),
-                    android.R.layout.simple_list_item_1,
-                    android.R.id.text1,
-                    informacoes);
+                    android.R.layout.simple_list_item_2,
+                    android.R.id.text2,
+                    informacoes){
+                @NonNull
+                @Override
+                public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+
+                    View view = super.getView(position, convertView, parent);
+                    TextView textView = view.findViewById(android.R.id.text2);
+                    textView.setTextColor(Color.BLACK);
+
+                    return view;
+                }
+            };
             lista.setAdapter(adapter);
 
             //Vamos agora listar as tarefas
@@ -152,7 +168,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void removerInformacao(Integer id){
         try{
-            bd.execSQL("DELETE FROM informacoes WHERE id = "+id);
+            bd.execSQL("DELETE FROM informacoes WHERE id=" + id);
+            recuperarInformacao();
         }catch (Exception e){
             e.printStackTrace();
         }
